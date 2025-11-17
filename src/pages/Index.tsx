@@ -7,9 +7,11 @@ import { PhraseCard } from '@/components/PhraseCard';
 import { PatientResponseCard } from '@/components/PatientResponseCard';
 import { PainScaleCard } from '@/components/PainScaleCard';
 import { categories, samplePhrases } from '@/data/samplePhrases';
-import { ArrowLeft, Search, Globe, AlertCircle, Volume2 } from 'lucide-react';
+import { ArrowLeft, Search, Globe, AlertCircle, Volume2, Loader2, Pause } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { Progress } from '@/components/ui/progress';
 
 type View = 'home' | 'language' | 'category' | 'phrase';
 
@@ -20,7 +22,31 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedPhrase, setSelectedPhrase] = useState<string>('');
   const [search, setSearch] = useState('');
+  const [currentPlayingAudio, setCurrentPlayingAudio] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const audioPlayer = useAudioPlayer({
+    onPlaybackEnd: () => {
+      setCurrentPlayingAudio(null);
+    },
+    onError: (error) => {
+      console.error('Audio error:', error);
+      setCurrentPlayingAudio(null);
+    },
+  });
+
+  const handleAudioPlay = (audioUrl: string) => {
+    if (currentPlayingAudio === audioUrl) {
+      if (audioPlayer.isPlaying) {
+        audioPlayer.pause();
+      } else if (audioPlayer.isPaused) {
+        audioPlayer.resume();
+      }
+    } else {
+      setCurrentPlayingAudio(audioUrl);
+      audioPlayer.play(audioUrl);
+    }
+  };
 
   const handleLanguageSelect = (code: string, name: string) => {
     setSelectedLanguage(code);
@@ -184,14 +210,22 @@ const Index = () => {
               </Button>
             </div>
             <div className="space-y-4">
-              {filteredPhrases.map((phrase) => (
-                <PhraseCard
-                  key={phrase.id}
-                  phrase={phrase}
-                  selectedLanguage={selectedLanguage}
-                  onClick={() => handlePhraseSelect(phrase.id)}
-                />
-              ))}
+              {filteredPhrases.map((phrase) => {
+                const translation = phrase.translations.find(t => t.languageCode === selectedLanguage);
+                const isPlayingThis = currentPlayingAudio === translation?.audioUrl;
+                
+                return (
+                  <PhraseCard
+                    key={phrase.id}
+                    phrase={phrase}
+                    selectedLanguage={selectedLanguage}
+                    onClick={() => handlePhraseSelect(phrase.id)}
+                    onPlayAudio={handleAudioPlay}
+                    isPlayingAudio={isPlayingThis && audioPlayer.isPlaying}
+                    isLoadingAudio={isPlayingThis && audioPlayer.isLoading}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -218,10 +252,40 @@ const Index = () => {
                   </p>
                 </div>
 
-                <Button size="lg" className="w-full md:w-auto gap-2" variant="secondary">
-                  <Volume2 className="h-5 w-5" />
-                  Play Audio
-                </Button>
+                {(() => {
+                  const translation = currentPhrase.translations.find(t => t.languageCode === selectedLanguage);
+                  const isPlayingThis = currentPlayingAudio === translation?.audioUrl;
+                  
+                  return translation?.audioUrl ? (
+                    <div className="space-y-4">
+                      <Button 
+                        size="lg" 
+                        className="w-full md:w-auto gap-2" 
+                        variant="secondary"
+                        onClick={() => handleAudioPlay(translation.audioUrl!)}
+                        disabled={audioPlayer.isLoading && isPlayingThis}
+                      >
+                        {audioPlayer.isLoading && isPlayingThis ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : isPlayingThis && audioPlayer.isPlaying ? (
+                          <Pause className="h-5 w-5" />
+                        ) : (
+                          <Volume2 className="h-5 w-5" />
+                        )}
+                        {isPlayingThis && audioPlayer.isPlaying ? 'Pause Audio' : 'Play Audio'}
+                      </Button>
+                      
+                      {isPlayingThis && audioPlayer.isPlaying && (
+                        <div className="w-full max-w-md mx-auto space-y-2">
+                          <Progress value={audioPlayer.progress} className="h-2" />
+                          <p className="text-xs text-muted-foreground text-center">
+                            Playing native speaker audio
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
 

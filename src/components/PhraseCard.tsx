@@ -1,17 +1,34 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Volume2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Volume2, CheckCircle, AlertCircle, Loader2, Pause } from 'lucide-react';
 import { Phrase } from '@/types/phrase';
 
 interface PhraseCardProps {
   phrase: Phrase;
   selectedLanguage: string;
   onClick: () => void;
+  onPlayAudio?: (audioUrl: string) => void;
+  isPlayingAudio?: boolean;
+  isLoadingAudio?: boolean;
 }
 
-export const PhraseCard = ({ phrase, selectedLanguage, onClick }: PhraseCardProps) => {
+export const PhraseCard = ({ 
+  phrase, 
+  selectedLanguage, 
+  onClick,
+  onPlayAudio,
+  isPlayingAudio,
+  isLoadingAudio
+}: PhraseCardProps) => {
   const translation = phrase.translations.find(t => t.languageCode === selectedLanguage);
+
+  const handleAudioClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (translation?.audioUrl && onPlayAudio) {
+      onPlayAudio(translation.audioUrl);
+    }
+  };
 
   return (
     <Card
@@ -30,9 +47,23 @@ export const PhraseCard = ({ phrase, selectedLanguage, onClick }: PhraseCardProp
               </p>
             )}
           </div>
-          <Button variant="ghost" size="icon" className="shrink-0">
-            <Volume2 className="h-5 w-5" />
-          </Button>
+          {translation?.audioUrl && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="shrink-0"
+              onClick={handleAudioClick}
+              disabled={isLoadingAudio}
+            >
+              {isLoadingAudio ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : isPlayingAudio ? (
+                <Pause className="h-5 w-5" />
+              ) : (
+                <Volume2 className="h-5 w-5" />
+              )}
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
