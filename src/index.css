@@ -40,6 +40,7 @@ All colors MUST be HSL.
     
     --verified: 150 70% 45%;
     --unverified: 25 90% 55%;
+    --warning: 38 92% 50%;
     --medical-blue: 210 100% 45%;
     --success-green: 150 70% 45%;
 
@@ -91,6 +92,7 @@ All colors MUST be HSL.
     
     --verified: 150 60% 45%;
     --unverified: 25 85% 55%;
+    --warning: 38 85% 50%;
     --medical-blue: 210 100% 55%;
     --success-green: 150 60% 45%;
     --sidebar-background: 240 5.9% 10%;

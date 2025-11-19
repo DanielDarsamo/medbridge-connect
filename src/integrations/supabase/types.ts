@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      tts_audio_cache: {
+        Row: {
+          file_size_bytes: number | null
+          generated_at: string | null
+          id: string
+          language_code: string
+          phrase_id: string
+          storage_path: string
+          voice_id: string
+        }
+        Insert: {
+          file_size_bytes?: number | null
+          generated_at?: string | null
+          id?: string
+          language_code: string
+          phrase_id: string
+          storage_path: string
+          voice_id: string
+        }
+        Update: {
+          file_size_bytes?: number | null
+          generated_at?: string | null
+          id?: string
+          language_code?: string
+          phrase_id?: string
+          storage_path?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

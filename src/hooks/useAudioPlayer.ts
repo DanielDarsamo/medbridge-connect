@@ -66,17 +66,41 @@ export const useAudioPlayer = (options: AudioPlayerOptions = {}) => {
     setPlaybackState('loading');
     
     try {
-      // Get public URL from Supabase Storage
-      const { data } = supabase.storage
-        .from('medical-audio')
-        .getPublicUrl(storagePath);
+      // Determine bucket based on path or check both buckets
+      let publicUrl: string | null = null;
+      
+      // Try medical-audio-tts first if path suggests TTS
+      if (storagePath.includes('tts') || storagePath.split('/').length > 1) {
+        const { data: ttsData } = supabase.storage
+          .from('medical-audio-tts')
+          .getPublicUrl(storagePath);
+        
+        if (ttsData?.publicUrl) {
+          // Verify the URL exists
+          const testResponse = await fetch(ttsData.publicUrl, { method: 'HEAD' });
+          if (testResponse.ok) {
+            publicUrl = ttsData.publicUrl;
+          }
+        }
+      }
+      
+      // If not found in TTS bucket, try regular medical-audio bucket
+      if (!publicUrl) {
+        const { data } = supabase.storage
+          .from('medical-audio')
+          .getPublicUrl(storagePath);
+        
+        if (data?.publicUrl) {
+          publicUrl = data.publicUrl;
+        }
+      }
 
-      if (!data?.publicUrl) {
+      if (!publicUrl) {
         throw new Error('Failed to get audio URL');
       }
 
       // Fetch audio file
-      const response = await fetch(data.publicUrl);
+      const response = await fetch(publicUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch audio: ${response.statusText}`);
       }
