@@ -3,6 +3,8 @@ export interface Translation {
   languageCode: string;
   text: string;
   audioUrl?: string;
+  ttsAudioUrl?: string;
+  audioSource?: 'verified' | 'tts' | 'none';
   formalVariant?: string;
   informalVariant?: string;
 }

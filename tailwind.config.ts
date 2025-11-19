@@ -49,6 +49,7 @@ export default {
         },
         verified: "hsl(var(--verified))",
         unverified: "hsl(var(--unverified))",
+        warning: "hsl(var(--warning))",
         medical: "hsl(var(--medical-blue))",
         success: "hsl(var(--success-green))",
         sidebar: {

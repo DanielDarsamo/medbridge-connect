@@ -6,7 +6,8 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { PhraseCard } from '@/components/PhraseCard';
 import { PatientResponseCard } from '@/components/PatientResponseCard';
 import { PainScaleCard } from '@/components/PainScaleCard';
-import { categories, samplePhrases } from '@/data/samplePhrases';
+import { categories, samplePhrases as initialPhrases } from '@/data/samplePhrases';
+import { Phrase } from '@/types/phrase';
 import { ArrowLeft, Search, Globe, AlertCircle, Volume2, Loader2, Pause } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ const Index = () => {
   const [selectedPhrase, setSelectedPhrase] = useState<string>('');
   const [search, setSearch] = useState('');
   const [currentPlayingAudio, setCurrentPlayingAudio] = useState<string | null>(null);
+  const [phrases, setPhrases] = useState<Phrase[]>(initialPhrases);
   const { toast } = useToast();
 
   const audioPlayer = useAudioPlayer({
@@ -81,10 +83,26 @@ const Index = () => {
     });
   };
 
-  const currentPhrase = samplePhrases.find(p => p.id === selectedPhrase);
+  const handleTTSGenerated = (phraseId: string, languageCode: string, ttsUrl: string) => {
+    setPhrases(prev => prev.map(phrase => {
+      if (phrase.id === phraseId) {
+        return {
+          ...phrase,
+          translations: phrase.translations.map(t => 
+            t.languageCode === languageCode 
+              ? { ...t, ttsAudioUrl: ttsUrl, audioSource: 'tts' as const }
+              : t
+          )
+        };
+      }
+      return phrase;
+    }));
+  };
+
+  const currentPhrase = phrases.find(p => p.id === selectedPhrase);
   const filteredPhrases = selectedCategory
-    ? samplePhrases.filter(p => p.category === selectedCategory)
-    : samplePhrases;
+    ? phrases.filter(p => p.category === selectedCategory)
+    : phrases;
 
   return (
     <div className="min-h-screen bg-background">
@@ -212,7 +230,8 @@ const Index = () => {
             <div className="space-y-4">
               {filteredPhrases.map((phrase) => {
                 const translation = phrase.translations.find(t => t.languageCode === selectedLanguage);
-                const isPlayingThis = currentPlayingAudio === translation?.audioUrl;
+                const audioUrl = translation?.audioUrl || translation?.ttsAudioUrl;
+                const isPlayingThis = currentPlayingAudio === audioUrl;
                 
                 return (
                   <PhraseCard
@@ -223,6 +242,7 @@ const Index = () => {
                     onPlayAudio={handleAudioPlay}
                     isPlayingAudio={isPlayingThis && audioPlayer.isPlaying}
                     isLoadingAudio={isPlayingThis && audioPlayer.isLoading}
+                    onTTSGenerated={(langCode, ttsUrl) => handleTTSGenerated(phrase.id, langCode, ttsUrl)}
                   />
                 );
               })}
@@ -254,15 +274,22 @@ const Index = () => {
 
                 {(() => {
                   const translation = currentPhrase.translations.find(t => t.languageCode === selectedLanguage);
-                  const isPlayingThis = currentPlayingAudio === translation?.audioUrl;
+                  const audioUrl = translation?.audioUrl || translation?.ttsAudioUrl;
+                  const isPlayingThis = currentPlayingAudio === audioUrl;
+                  const hasVerifiedAudio = !!translation?.audioUrl;
                   
-                  return translation?.audioUrl ? (
+                  return audioUrl ? (
                     <div className="space-y-4">
+                      {!hasVerifiedAudio && (
+                        <Badge variant="secondary" className="bg-warning text-white">
+                          AI-Generated Audio
+                        </Badge>
+                      )}
                       <Button 
                         size="lg" 
                         className="w-full md:w-auto gap-2" 
                         variant="secondary"
-                        onClick={() => handleAudioPlay(translation.audioUrl!)}
+                        onClick={() => handleAudioPlay(audioUrl)}
                         disabled={audioPlayer.isLoading && isPlayingThis}
                       >
                         {audioPlayer.isLoading && isPlayingThis ? (
@@ -279,7 +306,7 @@ const Index = () => {
                         <div className="w-full max-w-md mx-auto space-y-2">
                           <Progress value={audioPlayer.progress} className="h-2" />
                           <p className="text-xs text-muted-foreground text-center">
-                            Playing native speaker audio
+                            Playing {hasVerifiedAudio ? 'native speaker' : 'AI-generated'} audio
                           </p>
                         </div>
                       )}
