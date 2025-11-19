@@ -22,11 +22,6 @@ export const useTTS = () => {
 
       if (data?.success) {
         const { storagePath, cached } = data;
-        
-        // Get public URL for the TTS audio
-        const { data: { publicUrl } } = supabase.storage
-          .from('medical-audio-tts')
-          .getPublicUrl(storagePath);
 
         if (!cached) {
           toast({
@@ -35,7 +30,7 @@ export const useTTS = () => {
           });
         }
 
-        return publicUrl;
+        return storagePath;
       }
 
       throw new Error('Failed to generate TTS');
